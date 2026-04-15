@@ -1,3 +1,4 @@
-# Test Python Code
-print("hello")
+# Greet the user
+print("hello user")
+
 

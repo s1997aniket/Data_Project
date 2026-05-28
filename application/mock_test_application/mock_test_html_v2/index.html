@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCA Practice Test</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#1a1d2e;--surface2:#232640;--border:#2e3256;
+  --accent:#6c63ff;--accent2:#a78bfa;--text:#e2e8f0;--muted:#8892b0;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--r:12px;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
+.brand{font-size:1.1rem;font-weight:700;color:var(--accent2)}
+#timer-nav{font-family:monospace;font-size:1.2rem;font-weight:700;color:var(--accent2);display:none}
+#timer-nav.warn{color:var(--yellow)}
+#timer-nav.danger{color:var(--red);animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.page{display:none;max-width:820px;margin:0 auto;padding:1.5rem 1rem}
+.page.active{display:block}
+
+/* SETUP */
+.setup-title{font-size:1.8rem;font-weight:700;margin-bottom:.3rem}
+.setup-sub{color:var(--muted);margin-bottom:1.8rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1.2rem}
+.card-label{font-size:.8rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.9rem}
+.mode-tabs{display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap}
+.tab-btn{padding:.45rem 1.1rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.9rem;transition:all .2s}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.panel{display:none}.panel.active{display:block}
+.grid-opts{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.4rem}
+.opt-btn{padding:.5rem 1rem;border-radius:8px;border:2px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-size:.9rem;transition:all .15s}
+.opt-btn.sel{border-color:var(--accent);background:rgba(108,99,255,.15);color:var(--accent2)}
+.topic-btn{display:flex;flex-direction:column;align-items:center;gap:.1rem;padding:.5rem .8rem}
+.topic-btn small{font-size:.7rem}
+.num-row{display:flex;align-items:center;gap:.8rem;margin-top:.5rem}
+.num-row button{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:1.2rem;cursor:pointer}
+#rand-count{width:70px;text-align:center;padding:.4rem;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:1.1rem}
+.hint{font-size:.78rem;color:var(--muted);margin-top:.4rem}
+.time-row{display:flex;align-items:center;gap:1rem;margin-top:.5rem}
+#time-input{width:90px;text-align:center;padding:.5rem;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:1.4rem}
+.btn-start{display:block;width:100%;padding:.9rem;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:1.05rem;font-weight:600;cursor:pointer;transition:background .2s;margin-top:.5rem}
+.btn-start:hover{background:var(--accent2)}
+
+/* TEST PAGE */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.prog-text{font-size:.9rem;color:var(--muted)}
+.prog-bar-wrap{width:100%;height:4px;background:var(--border);border-radius:2px;margin-top:.5rem}
+.prog-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+.q-meta{display:flex;gap:.5rem;margin-bottom:.8rem}
+.badge{padding:.2rem .65rem;border-radius:20px;font-size:.75rem}
+.badge-topic{background:rgba(108,99,255,.2);color:var(--accent2)}
+.badge-id{background:var(--surface2);color:var(--muted)}
+.img-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem;min-height:180px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
+.img-wrap img{max-width:100%;max-height:480px;border-radius:6px}
+.img-missing{text-align:center;color:var(--muted);line-height:2;font-size:.9rem}
+.img-missing code{color:var(--accent2)}
+.choices{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin-bottom:1rem}
+@media(max-width:500px){.choices{grid-template-columns:repeat(2,1fr)}}
+.choice{display:flex;align-items:center;justify-content:center;padding:.9rem;border:2px solid var(--border);border-radius:var(--r);background:var(--surface);cursor:pointer;transition:all .15s;font-size:1.3rem;font-weight:700;color:var(--muted);user-select:none}
+.choice:hover{border-color:var(--accent2)}
+.choice.sel{border-color:var(--accent);background:rgba(108,99,255,.2);color:var(--accent2)}
+.nav-btns{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:1.5rem}
+.btn-nav{padding:.55rem 1.2rem;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.9rem;cursor:pointer;transition:all .2s}
+.btn-nav:hover{background:var(--border)}
+.btn-next{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-next:hover{background:var(--accent2)}
+.btn-finish-nav{background:transparent;border-color:var(--yellow);color:var(--yellow)}
+.btn-finish-nav:hover{background:rgba(245,158,11,.1)}
+.q-grid-label{font-size:.8rem;color:var(--muted);margin-bottom:.5rem}
+.q-grid{display:flex;flex-wrap:wrap;gap:.35rem}
+.q-dot{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.q-dot:hover{border-color:var(--accent2)}
+.q-dot.cur{background:var(--accent);color:#fff;border-color:var(--accent)}
+.q-dot.ans{border-color:var(--accent2);color:var(--accent2)}
+
+/* RESULTS */
+.score-hero{text-align:center;margin-bottom:1.8rem}
+.score-hero h1{font-size:1.8rem;margin-bottom:.8rem}
+.score-ring{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:120px;height:120px;border-radius:50%;border:3px solid var(--accent);margin-bottom:.5rem}
+.score-big{font-size:2rem;font-weight:800;color:var(--accent2);line-height:1}
+.score-of{font-size:.85rem;color:var(--muted)}
+.score-pct{font-size:1.3rem;font-weight:700}
+.duration{font-size:.85rem;color:var(--muted);margin-top:.2rem}
+.btn-retake{display:inline-block;margin-top:1rem;padding:.65rem 1.8rem;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:.95rem;font-weight:600;cursor:pointer}
+.topic-row{display:flex;align-items:center;gap:.8rem;margin-bottom:.7rem}
+.t-name{width:155px;font-size:.85rem;color:var(--muted);flex-shrink:0}
+.t-bar-w{flex:1;background:var(--surface2);border-radius:3px;height:8px}
+.t-bar{height:100%;background:var(--accent);border-radius:3px}
+.t-score{width:110px;text-align:right;font-size:.82rem;color:var(--muted)}
+.review-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{background:var(--surface2);padding:.6rem .8rem;text-align:left;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+td{padding:.55rem .8rem;border-bottom:1px solid var(--border)}
+.row-ok td{background:rgba(34,197,94,.04)}
+.row-bad td{background:rgba(239,68,68,.04)}
+.row-skip{opacity:.6}
+.ans-cell{font-weight:700;font-size:.95rem}
+.cor{color:var(--green)}.wro{color:var(--red)}
+.pill{padding:.15rem .6rem;border-radius:20px;font-size:.73rem;font-weight:600}
+.pill-ok{background:rgba(34,197,94,.15);color:var(--green)}
+.pill-bad{background:rgba(239,68,68,.15);color:var(--red)}
+.pill-skip{background:rgba(148,163,184,.15);color:var(--muted)}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">📐 PCA Practice Test</span>
+  <span id="timer-nav"></span>
+</nav>
+
+<!-- SETUP PAGE -->
+<div class="page active" id="pg-setup">
+  <div style="padding-top:.5rem">
+    <p class="setup-title">PCA Practice Test</p>
+    <p class="setup-sub">244 questions &nbsp;·&nbsp; Multiple choice &nbsp;·&nbsp; Timed</p>
+
+    <div class="card">
+      <div class="card-label">1. Select mode</div>
+      <div class="mode-tabs">
+        <button class="tab-btn active" onclick="setMode('year')">By Year</button>
+        <button class="tab-btn" onclick="setMode('topic')">By Topic</button>
+        <button class="tab-btn" onclick="setMode('random')">Random Mix</button>
+      </div>
+
+      <div class="panel active" id="panel-year">
+        <div style="color:var(--muted);font-size:.85rem;margin-bottom:.4rem">Select year:</div>
+        <div class="grid-opts" id="year-opts"></div>
+      </div>
+      <div class="panel" id="panel-topic">
+        <div style="color:var(--muted);font-size:.85rem;margin-bottom:.4rem">Select topic:</div>
+        <div class="grid-opts" id="topic-opts"></div>
+      </div>
+      <div class="panel" id="panel-random">
+        <div style="color:var(--muted);font-size:.85rem;margin-bottom:.4rem">Number of questions:</div>
+        <div class="num-row">
+          <button onclick="adjCount(-5)">−</button>
+          <input type="number" id="rand-count" value="30" min="5" max="244">
+          <button onclick="adjCount(+5)">+</button>
+        </div>
+        <p class="hint">Max: 244 questions</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">2. Time limit</div>
+      <div class="time-row">
+        <input type="number" id="time-input" value="60" min="5" max="300">
+        <span style="color:var(--muted)">minutes</span>
+      </div>
+      <p class="hint">Suggestion: 1 min per question</p>
+    </div>
+
+    <button class="btn-start" onclick="startTest()">Start Test →</button>
+  </div>
+</div>
+
+<!-- TEST PAGE -->
+<div class="page" id="pg-test">
+  <div class="topbar">
+    <span class="prog-text" id="prog-text"></span>
+    <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+  </div>
+
+  <div class="q-meta">
+    <span class="badge badge-topic" id="q-topic"></span>
+    <span class="badge badge-id" id="q-id"></span>
+  </div>
+
+  <div class="img-wrap" id="img-wrap">
+    <img id="q-img" src="" alt="" onerror="showImgMissing()">
+  </div>
+
+  <div class="choices" id="choices-grid"></div>
+
+  <div class="nav-btns">
+    <button class="btn-nav" id="btn-prev" onclick="navigate(-1)">← Prev</button>
+    <button class="btn-nav btn-finish-nav" onclick="confirmFinish()">Finish Test</button>
+    <button class="btn-nav btn-next" id="btn-next" onclick="navigate(1)">Next →</button>
+  </div>
+
+  <div class="q-grid-label">Jump to question:</div>
+  <div class="q-grid" id="q-grid"></div>
+</div>
+
+<!-- RESULTS PAGE -->
+<div class="page" id="pg-results">
+  <div class="score-hero">
+    <h1>Test Complete!</h1>
+    <div class="score-ring">
+      <span class="score-big" id="res-score"></span>
+      <span class="score-of" id="res-of"></span>
+    </div>
+    <div class="score-pct" id="res-pct"></div>
+    <div class="duration" id="res-dur"></div>
+    <button class="btn-retake" onclick="goSetup()">Take Another Test</button>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Topic breakdown</div>
+    <div id="topic-breakdown"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Answer review</div>
+    <div class="review-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Problem ID</th><th>Topic</th><th>Your answer</th><th>Correct</th><th>Result</th></tr>
+        </thead>
+        <tbody id="review-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL_Q = [{"Sl. No.": 1, "Problem_ID": "PCA-2017-01", "Answer": "a", "Topic": "CG"}, {"Sl. No.": 2, "Problem_ID": "PCA-2017-02", "Answer": "c", "Topic": "CG"}, {"Sl. No.": 3, "Problem_ID": "PCA-2017-03", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 4, "Problem_ID": "PCA-2017-04", "Answer": "a", "Topic": "CA"}, {"Sl. No.": 5, "Problem_ID": "PCA-2017-05", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 6, "Problem_ID": "PCA-2017-06", "Answer": "a", "Topic": "COM"}, {"Sl. No.": 7, "Problem_ID": "PCA-2017-07", "Answer": "a", "Topic": "NT"}, {"Sl. No.": 8, "Problem_ID": "PCA-2017-08", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 9, "Problem_ID": "PCA-2017-09", "Answer": "b", "Topic": "DE"}, {"Sl. No.": 10, "Problem_ID": "PCA-2017-10", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 11, "Problem_ID": "PCA-2017-11", "Answer": "c", "Topic": "NT"}, {"Sl. No.": 12, "Problem_ID": "PCA-2017-12", "Answer": "c", "Topic": "NT"}, {"Sl. No.": 13, "Problem_ID": "PCA-2017-13", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 14, "Problem_ID": "PCA-2017-14", "Answer": "b", "Topic": "RA"}, {"Sl. No.": 15, "Problem_ID": "PCA-2017-15", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 16, "Problem_ID": "PCA-2017-16", "Answer": "b", "Topic": "RA"}, {"Sl. No.": 17, "Problem_ID": "PCA-2017-17", "Answer": "b", "Topic": "PRB"}, {"Sl. No.": 18, "Problem_ID": "PCA-2017-18", "Answer": "c", "Topic": "LA"}, {"Sl. No.": 19, "Problem_ID": "PCA-2017-19", "Answer": "c", "Topic": "LA"}, {"Sl. No.": 20, "Problem_ID": "PCA-2017-20", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 21, "Problem_ID": "PCA-2017-21", "Answer": "b", "Topic": "PRB"}, {"Sl. No.": 22, "Problem_ID": "PCA-2017-22", "Answer": "c", "Topic": "COM"}, {"Sl. No.": 23, "Problem_ID": "PCA-2017-23", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 24, "Problem_ID": "PCA-2017-24", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 25, "Problem_ID": "PCA-2017-25", "Answer": "b", "Topic": "CA"}, {"Sl. No.": 26, "Problem_ID": "PCA-2017-26", "Answer": "a", "Topic": "COM"}, {"Sl. No.": 27, "Problem_ID": "PCA-2017-27", "Answer": "a", "Topic": "PRB"}, {"Sl. No.": 28, "Problem_ID": "PCA-2017-28", "Answer": "b", "Topic": "GRP"}, {"Sl. No.": 29, "Problem_ID": "PCA-2017-29", "Answer": "d", "Topic": "LA"}, {"Sl. No.": 30, "Problem_ID": "PCA-2017-30", "Answer": "d", "Topic": "AL"}, {"Sl. No.": 31, "Problem_ID": "PCA-2018-01", "Answer": "a", "Topic": "NT"}, {"Sl. No.": 32, "Problem_ID": "PCA-2018-02", "Answer": "d", "Topic": "COM"}, {"Sl. No.": 33, "Problem_ID": "PCA-2018-03", "Answer": "c", "Topic": "NT"}, {"Sl. No.": 34, "Problem_ID": "PCA-2018-04", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 35, "Problem_ID": "PCA-2018-05", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 36, "Problem_ID": "PCA-2018-06", "Answer": "d", "Topic": "MVC"}, {"Sl. No.": 37, "Problem_ID": "PCA-2018-07", "Answer": "c", "Topic": "NT"}, {"Sl. No.": 38, "Problem_ID": "PCA-2018-08", "Answer": "a", "Topic": "NT"}, {"Sl. No.": 39, "Problem_ID": "PCA-2018-09", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 40, "Problem_ID": "PCA-2018-10", "Answer": "b", "Topic": "COM"}, {"Sl. No.": 41, "Problem_ID": "PCA-2018-11", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 42, "Problem_ID": "PCA-2018-12", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 43, "Problem_ID": "PCA-2018-13", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 44, "Problem_ID": "PCA-2018-14", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 45, "Problem_ID": "PCA-2018-15", "Answer": "b", "Topic": "GRP"}, {"Sl. No.": 46, "Problem_ID": "PCA-2018-16", "Answer": "c", "Topic": "PRB"}, {"Sl. No.": 47, "Problem_ID": "PCA-2018-17", "Answer": "c", "Topic": "PRB"}, {"Sl. No.": 48, "Problem_ID": "PCA-2018-18", "Answer": "c", "Topic": "PRB"}, {"Sl. No.": 49, "Problem_ID": "PCA-2018-19", "Answer": "b", "Topic": "PRB"}, {"Sl. No.": 50, "Problem_ID": "PCA-2018-20", "Answer": "a", "Topic": "PRB"}, {"Sl. No.": 51, "Problem_ID": "PCA-2018-21", "Answer": "b", "Topic": "CG"}, {"Sl. No.": 52, "Problem_ID": "PCA-2018-22", "Answer": "d", "Topic": "CG"}, {"Sl. No.": 53, "Problem_ID": "PCA-2018-23", "Answer": "d", "Topic": "RA"}, {"Sl. No.": 54, "Problem_ID": "PCA-2018-24", "Answer": "b", "Topic": "RA"}, {"Sl. No.": 55, "Problem_ID": "PCA-2018-25", "Answer": "d", "Topic": "DE"}, {"Sl. No.": 56, "Problem_ID": "PCA-2018-26", "Answer": "d", "Topic": "AL"}, {"Sl. No.": 57, "Problem_ID": "PCA-2018-27", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 58, "Problem_ID": "PCA-2018-28", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 59, "Problem_ID": "PCA-2018-29", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 60, "Problem_ID": "PCA-2018-30", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 61, "Problem_ID": "PCA-2019-01", "Answer": "c", "Topic": "NT"}, {"Sl. No.": 62, "Problem_ID": "PCA-2019-02", "Answer": "d", "Topic": "NT"}, {"Sl. No.": 63, "Problem_ID": "PCA-2019-03", "Answer": "b", "Topic": "COM"}, {"Sl. No.": 64, "Problem_ID": "PCA-2019-04", "Answer": "c", "Topic": "COM"}, {"Sl. No.": 65, "Problem_ID": "PCA-2019-05", "Answer": "a", "Topic": "DE"}, {"Sl. No.": 66, "Problem_ID": "PCA-2019-06", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 67, "Problem_ID": "PCA-2019-07", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 68, "Problem_ID": "PCA-2019-08", "Answer": "d", "Topic": "TRI"}, {"Sl. No.": 69, "Problem_ID": "PCA-2019-09", "Answer": "d", "Topic": "TRI"}, {"Sl. No.": 70, "Problem_ID": "PCA-2019-10", "Answer": "d", "Topic": "PRB"}, {"Sl. No.": 71, "Problem_ID": "PCA-2019-11", "Answer": "a", "Topic": "NT"}, {"Sl. No.": 72, "Problem_ID": "PCA-2019-12", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 73, "Problem_ID": "PCA-2019-13", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 74, "Problem_ID": "PCA-2019-14", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 75, "Problem_ID": "PCA-2019-15", "Answer": "c", "Topic": "LA"}, {"Sl. No.": 76, "Problem_ID": "PCA-2019-16", "Answer": "b", "Topic": "CG"}, {"Sl. No.": 77, "Problem_ID": "PCA-2019-17", "Answer": "c", "Topic": "CG"}, {"Sl. No.": 78, "Problem_ID": "PCA-2019-18", "Answer": "a", "Topic": "DE"}, {"Sl. No.": 79, "Problem_ID": "PCA-2019-19", "Answer": "b", "Topic": "GRP"}, {"Sl. No.": 80, "Problem_ID": "PCA-2019-20", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 81, "Problem_ID": "PCA-2019-21", "Answer": "d", "Topic": "COM"}, {"Sl. No.": 82, "Problem_ID": "PCA-2019-22", "Answer": "b", "Topic": "PRB"}, {"Sl. No.": 83, "Problem_ID": "PCA-2019-23", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 84, "Problem_ID": "PCA-2019-24", "Answer": "a", "Topic": "RA"}, {"Sl. No.": 85, "Problem_ID": "PCA-2019-25", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 86, "Problem_ID": "PCA-2019-26", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 87, "Problem_ID": "PCA-2019-27", "Answer": "b", "Topic": "COM"}, {"Sl. No.": 88, "Problem_ID": "PCA-2019-28", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 89, "Problem_ID": "PCA-2019-29", "Answer": "a", "Topic": "CA"}, {"Sl. No.": 90, "Problem_ID": "PCA-2019-30", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 91, "Problem_ID": "PCA-2020-01", "Answer": "a", "Topic": "CG"}, {"Sl. No.": 92, "Problem_ID": "PCA-2020-02", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 93, "Problem_ID": "PCA-2020-03", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 94, "Problem_ID": "PCA-2020-04", "Answer": "a", "Topic": "CA"}, {"Sl. No.": 95, "Problem_ID": "PCA-2020-05", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 96, "Problem_ID": "PCA-2020-06", "Answer": "a", "Topic": "CA"}, {"Sl. No.": 97, "Problem_ID": "PCA-2020-07", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 98, "Problem_ID": "PCA-2020-08", "Answer": "d", "Topic": "DE"}, {"Sl. No.": 99, "Problem_ID": "PCA-2020-09", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 100, "Problem_ID": "PCA-2020-10", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 101, "Problem_ID": "PCA-2020-11", "Answer": "d", "Topic": "AL"}, {"Sl. No.": 102, "Problem_ID": "PCA-2020-12", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 103, "Problem_ID": "PCA-2020-13", "Answer": "d", "Topic": "AL"}, {"Sl. No.": 104, "Problem_ID": "PCA-2020-14", "Answer": "a", "Topic": "RA"}, {"Sl. No.": 105, "Problem_ID": "PCA-2020-15", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 106, "Problem_ID": "PCA-2020-16", "Answer": "a", "Topic": "CG"}, {"Sl. No.": 107, "Problem_ID": "PCA-2020-17", "Answer": "d", "Topic": "COM"}, {"Sl. No.": 108, "Problem_ID": "PCA-2020-18", "Answer": "c", "Topic": "RA"}, {"Sl. No.": 109, "Problem_ID": "PCA-2020-19", "Answer": "a", "Topic": "NT"}, {"Sl. No.": 110, "Problem_ID": "PCA-2020-20", "Answer": "c", "Topic": "COM"}, {"Sl. No.": 111, "Problem_ID": "PCA-2020-21", "Answer": "c", "Topic": "LA"}, {"Sl. No.": 112, "Problem_ID": "PCA-2020-22", "Answer": "c", "Topic": "NT"}, {"Sl. No.": 113, "Problem_ID": "PCA-2020-23", "Answer": "d", "Topic": "PRB"}, {"Sl. No.": 114, "Problem_ID": "PCA-2020-24", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 115, "Problem_ID": "PCA-2020-25", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 116, "Problem_ID": "PCA-2020-26", "Answer": "b", "Topic": "GRP"}, {"Sl. No.": 117, "Problem_ID": "PCA-2020-27", "Answer": "a", "Topic": "CA"}, {"Sl. No.": 118, "Problem_ID": "PCA-2020-28", "Answer": "d", "Topic": "RA"}, {"Sl. No.": 119, "Problem_ID": "PCA-2020-29", "Answer": "b", "Topic": "CA"}, {"Sl. No.": 120, "Problem_ID": "PCA-2020-30", "Answer": "b", "Topic": "RA"}, {"Sl. No.": 121, "Problem_ID": "PCA-2021-01", "Answer": "a", "Topic": "CA"}, {"Sl. No.": 122, "Problem_ID": "PCA-2021-02", "Answer": "b", "Topic": "PRB"}, {"Sl. No.": 123, "Problem_ID": "PCA-2021-03", "Answer": "c", "Topic": "LA"}, {"Sl. No.": 124, "Problem_ID": "PCA-2021-04", "Answer": "b", "Topic": "CA"}, {"Sl. No.": 125, "Problem_ID": "PCA-2021-05", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 126, "Problem_ID": "PCA-2021-06", "Answer": "d", "Topic": "RA"}, {"Sl. No.": 127, "Problem_ID": "PCA-2021-07", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 128, "Problem_ID": "PCA-2021-08", "Answer": "c", "Topic": "LA"}, {"Sl. No.": 129, "Problem_ID": "PCA-2021-09", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 130, "Problem_ID": "PCA-2021-10", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 131, "Problem_ID": "PCA-2021-11", "Answer": "d", "Topic": "AL"}, {"Sl. No.": 132, "Problem_ID": "PCA-2021-12", "Answer": "c", "Topic": "NT"}, {"Sl. No.": 133, "Problem_ID": "PCA-2021-13", "Answer": "b", "Topic": "MVC"}, {"Sl. No.": 134, "Problem_ID": "PCA-2021-14", "Answer": "b", "Topic": "RA"}, {"Sl. No.": 135, "Problem_ID": "PCA-2021-15", "Answer": "d", "Topic": "CG"}, {"Sl. No.": 136, "Problem_ID": "PCA-2021-16", "Answer": "a", "Topic": "RA"}, {"Sl. No.": 137, "Problem_ID": "PCA-2021-17", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 138, "Problem_ID": "PCA-2021-18", "Answer": "a", "Topic": "MVC"}, {"Sl. No.": 139, "Problem_ID": "PCA-2021-19", "Answer": "a", "Topic": "GRP"}, {"Sl. No.": 140, "Problem_ID": "PCA-2021-20", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 141, "Problem_ID": "PCA-2021-21", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 142, "Problem_ID": "PCA-2021-22", "Answer": "c", "Topic": "MVC"}, {"Sl. No.": 143, "Problem_ID": "PCA-2021-23", "Answer": "c", "Topic": "DE"}, {"Sl. No.": 144, "Problem_ID": "PCA-2021-24", "Answer": "d", "Topic": "PRB"}, {"Sl. No.": 145, "Problem_ID": "PCA-2021-25", "Answer": "c", "Topic": "COM"}, {"Sl. No.": 146, "Problem_ID": "PCA-2021-26", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 147, "Problem_ID": "PCA-2021-27", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 148, "Problem_ID": "PCA-2021-28", "Answer": "a", "Topic": "CG"}, {"Sl. No.": 149, "Problem_ID": "PCA-2021-29", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 150, "Problem_ID": "PCA-2021-30", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 151, "Problem_ID": "PCA-SAMPLE-01", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 152, "Problem_ID": "PCA-SAMPLE-02", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 153, "Problem_ID": "PCA-SAMPLE-03", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 154, "Problem_ID": "PCA-SAMPLE-04", "Answer": "a", "Topic": "COM"}, {"Sl. No.": 155, "Problem_ID": "PCA-SAMPLE-05", "Answer": "d", "Topic": "COM"}, {"Sl. No.": 156, "Problem_ID": "PCA-SAMPLE-06", "Answer": "b", "Topic": "COM"}, {"Sl. No.": 157, "Problem_ID": "PCA-SAMPLE-07", "Answer": "c", "Topic": "COM"}, {"Sl. No.": 158, "Problem_ID": "PCA-SAMPLE-08", "Answer": "d", "Topic": "COM"}, {"Sl. No.": 159, "Problem_ID": "PCA-SAMPLE-09", "Answer": "d", "Topic": "AL"}, {"Sl. No.": 160, "Problem_ID": "PCA-SAMPLE-10", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 161, "Problem_ID": "PCA-SAMPLE-11", "Answer": "a", "Topic": "NT"}, {"Sl. No.": 162, "Problem_ID": "PCA-SAMPLE-12", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 163, "Problem_ID": "PCA-SAMPLE-13", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 164, "Problem_ID": "PCA-SAMPLE-14", "Answer": "a", "Topic": "NT"}, {"Sl. No.": 165, "Problem_ID": "PCA-SAMPLE-15", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 166, "Problem_ID": "PCA-SAMPLE-16", "Answer": "d", "Topic": "AL"}, {"Sl. No.": 167, "Problem_ID": "PCA-SAMPLE-17", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 168, "Problem_ID": "PCA-SAMPLE-18", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 169, "Problem_ID": "PCA-SAMPLE-19", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 170, "Problem_ID": "PCA-SAMPLE-20", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 171, "Problem_ID": "PCA-SAMPLE-21", "Answer": "a", "Topic": "AL"}, {"Sl. No.": 172, "Problem_ID": "PCA-SAMPLE-22", "Answer": "d", "Topic": "RA"}, {"Sl. No.": 173, "Problem_ID": "PCA-SAMPLE-23", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 174, "Problem_ID": "PCA-SAMPLE-24", "Answer": "b", "Topic": "RA"}, {"Sl. No.": 175, "Problem_ID": "PCA-SAMPLE-25", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 176, "Problem_ID": "PCA-SAMPLE-26", "Answer": "c", "Topic": "RA"}, {"Sl. No.": 177, "Problem_ID": "PCA-SAMPLE-27", "Answer": "d", "Topic": "TRI"}, {"Sl. No.": 178, "Problem_ID": "PCA-SAMPLE-28", "Answer": "c", "Topic": "TRI"}, {"Sl. No.": 179, "Problem_ID": "PCA-SAMPLE-29", "Answer": "d", "Topic": "AL"}, {"Sl. No.": 180, "Problem_ID": "PCA-SAMPLE-30", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 181, "Problem_ID": "PCA-SAMPLE-31", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 182, "Problem_ID": "PCA-SAMPLE-32", "Answer": "a", "Topic": "CG"}, {"Sl. No.": 183, "Problem_ID": "PCA-SAMPLE-33", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 184, "Problem_ID": "PCA-SAMPLE-34", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 185, "Problem_ID": "PCA-SAMPLE-35", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 186, "Problem_ID": "PCA-SAMPLE-36", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 187, "Problem_ID": "PCA-SAMPLE-37", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 188, "Problem_ID": "PCA-SAMPLE-38", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 189, "Problem_ID": "PCA-SAMPLE-39", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 190, "Problem_ID": "PCA-SAMPLE-40", "Answer": "a", "Topic": "LA"}, {"Sl. No.": 191, "Problem_ID": "PCA-SAMPLE-41", "Answer": "d", "Topic": "NT"}, {"Sl. No.": 192, "Problem_ID": "PCA-SAMPLE-42", "Answer": "c", "Topic": "LA"}, {"Sl. No.": 193, "Problem_ID": "PCA-SAMPLE-43", "Answer": "d", "Topic": "LA"}, {"Sl. No.": 194, "Problem_ID": "PCA-SAMPLE-44", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 195, "Problem_ID": "PCA-SAMPLE-45", "Answer": "b", "Topic": "CG"}, {"Sl. No.": 196, "Problem_ID": "PCA-SAMPLE-46", "Answer": "c", "Topic": "CG"}, {"Sl. No.": 197, "Problem_ID": "PCA-SAMPLE-47", "Answer": "c", "Topic": "CG"}, {"Sl. No.": 198, "Problem_ID": "PCA-SAMPLE-48", "Answer": "a", "Topic": "CG"}, {"Sl. No.": 199, "Problem_ID": "PCA-SAMPLE-49", "Answer": "c", "Topic": "CG"}, {"Sl. No.": 200, "Problem_ID": "PCA-SAMPLE-50", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 201, "Problem_ID": "PCA-SAMPLE-51", "Answer": "b", "Topic": "PRB"}, {"Sl. No.": 202, "Problem_ID": "PCA-SAMPLE-52", "Answer": "b", "Topic": "PRB"}, {"Sl. No.": 203, "Problem_ID": "PCA-SAMPLE-53", "Answer": "c", "Topic": "PRB"}, {"Sl. No.": 204, "Problem_ID": "PCA-SAMPLE-54", "Answer": "d", "Topic": "AL"}, {"Sl. No.": 205, "Problem_ID": "PCA-SAMPLE-55", "Answer": "b", "Topic": "RA"}, {"Sl. No.": 206, "Problem_ID": "PCA-SAMPLE-56", "Answer": "b", "Topic": "RA"}, {"Sl. No.": 207, "Problem_ID": "PCA-SAMPLE-57", "Answer": "c", "Topic": "RA"}, {"Sl. No.": 208, "Problem_ID": "PCA-SAMPLE-58", "Answer": "a", "Topic": "RA"}, {"Sl. No.": 209, "Problem_ID": "PCA-SAMPLE-59", "Answer": "b", "Topic": "RA"}, {"Sl. No.": 210, "Problem_ID": "PCA-SAMPLE-60", "Answer": "b", "Topic": "GRP"}, {"Sl. No.": 211, "Problem_ID": "PCA-SAMPLE-61", "Answer": "c", "Topic": "LA"}, {"Sl. No.": 212, "Problem_ID": "PCA-SAMPLE-62", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 213, "Problem_ID": "PCA-SAMPLE-63", "Answer": "b", "Topic": "LA"}, {"Sl. No.": 214, "Problem_ID": "PCA-SAMPLE-64", "Answer": "b", "Topic": "CG"}, {"Sl. No.": 215, "Problem_ID": "PCA-SAMPLE-65", "Answer": "b", "Topic": "AL"}, {"Sl. No.": 216, "Problem_ID": "PCA-SAMPLE-66", "Answer": "d", "Topic": "TRI"}, {"Sl. No.": 217, "Problem_ID": "PCA-SAMPLE-67", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 218, "Problem_ID": "PCA-SAMPLE-68", "Answer": "a", "Topic": "MVC"}, {"Sl. No.": 219, "Problem_ID": "PCA-SAMPLE-69", "Answer": "d", "Topic": "CA"}, {"Sl. No.": 220, "Problem_ID": "PCA-SAMPLE-70", "Answer": "b", "Topic": "MVC"}, {"Sl. No.": 221, "Problem_ID": "PCA-SAMPLE-71", "Answer": "b", "Topic": "MVC"}, {"Sl. No.": 222, "Problem_ID": "PCA-SAMPLE-72", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 223, "Problem_ID": "PCA-SAMPLE-73", "Answer": "a", "Topic": "CA"}, {"Sl. No.": 224, "Problem_ID": "PCA-SAMPLE-74", "Answer": "c", "Topic": "CA"}, {"Sl. No.": 225, "Problem_ID": "PCA-SAMPLE-75", "Answer": "d", "Topic": "MVC"}, {"Sl. No.": 226, "Problem_ID": "PCA-SAMPLE-76", "Answer": "d", "Topic": "MVC"}, {"Sl. No.": 227, "Problem_ID": "PCA-SAMPLE-77", "Answer": "a", "Topic": "MVC"}, {"Sl. No.": 228, "Problem_ID": "PCA-SAMPLE-78", "Answer": "b", "Topic": "CA"}, {"Sl. No.": 229, "Problem_ID": "PCA-SAMPLE-79", "Answer": "a", "Topic": "CA"}, {"Sl. No.": 230, "Problem_ID": "PCA-SAMPLE-80", "Answer": "b", "Topic": "CA"}, {"Sl. No.": 231, "Problem_ID": "PCA-SAMPLE-81", "Answer": "a", "Topic": "CA"}, {"Sl. No.": 232, "Problem_ID": "PCA-SAMPLE-82", "Answer": "b", "Topic": "MVC"}, {"Sl. No.": 233, "Problem_ID": "PCA-SAMPLE-83", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 234, "Problem_ID": "PCA-SAMPLE-84", "Answer": "c", "Topic": "AL"}, {"Sl. No.": 235, "Problem_ID": "PCA-SAMPLE-85", "Answer": "b", "Topic": "DE"}, {"Sl. No.": 236, "Problem_ID": "PCA-SAMPLE-86", "Answer": "a", "Topic": "DE"}, {"Sl. No.": 237, "Problem_ID": "PCA-SAMPLE-87", "Answer": "a", "Topic": "DE"}, {"Sl. No.": 238, "Problem_ID": "PCA-SAMPLE-88", "Answer": "c", "Topic": "DE"}, {"Sl. No.": 239, "Problem_ID": "PCA-SAMPLE-89", "Answer": "a", "Topic": "DE"}, {"Sl. No.": 240, "Problem_ID": "PCA-SAMPLE-90", "Answer": "d", "Topic": "DE"}, {"Sl. No.": 241, "Problem_ID": "PCA-SAMPLE-91", "Answer": "a", "Topic": "DE"}, {"Sl. No.": 242, "Problem_ID": "PCA-SAMPLE-92", "Answer": "d", "Topic": "GRP"}, {"Sl. No.": 243, "Problem_ID": "PCA-SAMPLE-93", "Answer": "a", "Topic": "GRP"}, {"Sl. No.": 244, "Problem_ID": "PCA-SAMPLE-94", "Answer": "d", "Topic": "GRP"}];
+
+const TOPIC_LABELS = {AL:'Algebra',CA:'Calculus',LA:'Linear Algebra',RA:'Real Analysis',CG:'Coordinate Geometry',COM:'Combinatorics',NT:'Number Theory',PRB:'Probability',DE:'Diff. Equations',MVC:'Multivariable Calc',GRP:'Group Theory',TRI:'Trigonometry'};
+
+// State
+let mode='year', selYear=2017, selTopic='AL';
+let session=[]; // array of question objects for this test
+let answers={}; // idx -> chosen letter
+let curIdx=0;
+let totalSecs=0, remainSecs=0, timerInterval=null;
+let startTime=null, endTime=null;
+
+// ── Setup init ────────────────────────────────────────────────
+(function initSetup(){
+  const years=[...new Set(ALL_Q.map(q=>q.Problem_ID.split('-')[1]).filter(y=>!isNaN(y)))].sort();
+  const yearDiv=document.getElementById('year-opts');
+  years.forEach(y=>{
+    const b=document.createElement('button');
+    b.className='opt-btn'+(y==2017?' sel':'');
+    b.textContent=y;
+    b.onclick=()=>{selYear=parseInt(y);yearDiv.querySelectorAll('.opt-btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel')};
+    yearDiv.appendChild(b);
+    if(y==2017) selYear=2017;
+  });
+
+  const topics=[...new Set(ALL_Q.map(q=>q.Topic))].sort();
+  const topicDiv=document.getElementById('topic-opts');
+  topics.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='opt-btn topic-btn'+(i==0?' sel':'');
+    b.innerHTML=`${TOPIC_LABELS[t]||t}<small>${t}</small>`;
+    b.onclick=()=>{selTopic=t;topicDiv.querySelectorAll('.opt-btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel')};
+    topicDiv.appendChild(b);
+    if(i==0) selTopic=t;
+  });
+})();
+
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['year','topic','random'][i]===m));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+m).classList.add('active');
+}
+
+function adjCount(d){
+  const el=document.getElementById('rand-count');
+  el.value=Math.min(244,Math.max(5,parseInt(el.value)+d));
+}
+
+function startTest(){
+  const mins=parseInt(document.getElementById('time-input').value)||60;
+  totalSecs=mins*60; remainSecs=totalSecs;
+
+  if(mode==='year'){
+    session=ALL_Q.filter(q=>q.Problem_ID.startsWith('PCA-'+selYear+'-'));
+  } else if(mode==='topic'){
+    session=ALL_Q.filter(q=>q.Topic===selTopic);
+  } else {
+    const n=Math.min(244,Math.max(5,parseInt(document.getElementById('rand-count').value)||30));
+    const pool=[...ALL_Q];
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    session=pool.slice(0,n);
+  }
+
+  if(!session.length){alert('No questions found for that selection.');return;}
+  answers={};curIdx=0;
+  startTime=Date.now();
+  buildQGrid();
+  showPage('pg-test');
+  renderQuestion();
+  startTimer();
+}
+
+// ── Timer ─────────────────────────────────────────────────────
+function startTimer(){
+  const nav=document.getElementById('timer-nav');
+  nav.style.display='block';
+  clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    remainSecs--;
+    updateTimerDisplay();
+    if(remainSecs<=0){clearInterval(timerInterval);finishTest();}
+  },1000);
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay(){
+  const nav=document.getElementById('timer-nav');
+  const m=Math.floor(remainSecs/60),s=remainSecs%60;
+  nav.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  nav.className=remainSecs<=60?'danger':remainSecs<=300?'warn':'';
+}
+
+// ── Test rendering ────────────────────────────────────────────
+function buildQGrid(){
+  const grid=document.getElementById('q-grid');
+  grid.innerHTML='';
+  session.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='q-dot';d.id='qdot-'+i;d.textContent=i+1;
+    d.onclick=()=>goTo(i);
+    grid.appendChild(d);
+  });
+}
+
+function renderQuestion(){
+  const q=session[curIdx];
+  const total=session.length;
+  document.getElementById('prog-text').textContent=`Question ${curIdx+1} of ${total}`;
+  document.getElementById('prog-bar').style.width=`${((curIdx+1)/total*100).toFixed(1)}%`;
+  document.getElementById('q-topic').textContent=TOPIC_LABELS[q.Topic]||q.Topic;
+  document.getElementById('q-id').textContent=q.Problem_ID;
+
+  // Image
+  const img=document.getElementById('q-img');
+  const wrap=document.getElementById('img-wrap');
+  img.style.display='block';
+  const miss=wrap.querySelector('.img-missing');
+  if(miss) miss.remove();
+  img.src=q.Problem_ID+'.jpg';
+  img.alt=q.Problem_ID;
+
+  // Choices
+  const grid=document.getElementById('choices-grid');
+  grid.innerHTML='';
+  ['a','b','c','d'].forEach(c=>{
+    const div=document.createElement('div');
+    div.className='choice'+(answers[curIdx]===c?' sel':'');
+    div.textContent=c.toUpperCase();
+    div.onclick=()=>selectAnswer(c);
+    grid.appendChild(div);
+  });
+
+  // Prev/Next
+  document.getElementById('btn-prev').style.visibility=curIdx===0?'hidden':'visible';
+  const nextBtn=document.getElementById('btn-next');
+  if(curIdx===total-1){nextBtn.textContent='Submit →';nextBtn.onclick=confirmFinish;}
+  else{nextBtn.textContent='Next →';nextBtn.onclick=()=>navigate(1);}
+
+  // Q-grid dots
+  document.querySelectorAll('.q-dot').forEach((d,i)=>{
+    d.className='q-dot'+(i===curIdx?' cur':answers[i]?' ans':'');
+  });
+}
+
+function selectAnswer(c){
+  answers[curIdx]=c;
+  document.querySelectorAll('.choice').forEach((el,i)=>el.classList.toggle('sel',['a','b','c','d'][i]===c));
+  const dot=document.getElementById('qdot-'+curIdx);
+  if(dot&&!dot.classList.contains('cur')) dot.classList.add('ans');
+}
+
+function showImgMissing(){
+  const img=document.getElementById('q-img');
+  const wrap=document.getElementById('img-wrap');
+  img.style.display='none';
+  if(!wrap.querySelector('.img-missing')){
+    const d=document.createElement('div');
+    d.className='img-missing';
+    d.innerHTML=`Image not found<br><code>${session[curIdx].Problem_ID}.jpg</code><br><small>Place JPEGs in the same folder as this HTML file</small>`;
+    wrap.appendChild(d);
+  }
+}
+
+function navigate(dir){
+  const next=curIdx+dir;
+  if(next>=0&&next<session.length){curIdx=next;renderQuestion();}
+}
+
+function goTo(i){curIdx=i;renderQuestion();}
+
+function confirmFinish(){
+  const answered=Object.keys(answers).length;
+  const unanswered=session.length-answered;
+  let msg=`Answered: ${answered}/${session.length}`;
+  if(unanswered>0) msg+=`\n${unanswered} question(s) unanswered (will be marked incorrect).`;
+  msg+='\n\nSubmit test?';
+  if(confirm(msg)) finishTest();
+}
+
+function finishTest(){
+  clearInterval(timerInterval);
+  endTime=Date.now();
+  showResults();
+  showPage('pg-results');
+}
+
+// ── Results ───────────────────────────────────────────────────
+function showResults(){
+  const total=session.length;
+  let correct=0;
+  const topicStats={};
+
+  session.forEach((q,i)=>{
+    const chosen=(answers[i]||'').toLowerCase();
+    const isCorrect=chosen===q.Answer.toLowerCase();
+    if(isCorrect) correct++;
+    const t=q.Topic;
+    if(!topicStats[t]) topicStats[t]={correct:0,total:0};
+    topicStats[t].total++;
+    if(isCorrect) topicStats[t].correct++;
+  });
+
+  document.getElementById('res-score').textContent=correct;
+  document.getElementById('res-of').textContent=`/ ${total}`;
+  document.getElementById('res-pct').textContent=Math.round(correct/total*100)+'%';
+
+  if(startTime&&endTime){
+    const secs=Math.round((endTime-startTime)/1000);
+    document.getElementById('res-dur').textContent=`Time taken: ${Math.floor(secs/60)}m ${secs%60}s`;
+  }
+
+  // Topic breakdown
+  const bd=document.getElementById('topic-breakdown');
+  bd.innerHTML='';
+  Object.entries(topicStats).sort((a,b)=>b[1].correct/b[1].total-a[1].correct/a[1].total).forEach(([code,s])=>{
+    const pct=Math.round(s.correct/s.total*100);
+    bd.innerHTML+=`<div class="topic-row">
+      <div class="t-name">${TOPIC_LABELS[code]||code}</div>
+      <div class="t-bar-w"><div class="t-bar" style="width:${pct}%"></div></div>
+      <div class="t-score">${s.correct}/${s.total} (${pct}%)</div>
+    </div>`;
+  });
+
+  // Review table
+  const tbody=document.getElementById('review-body');
+  tbody.innerHTML='';
+  session.forEach((q,i)=>{
+    const chosen=(answers[i]||'').toLowerCase();
+    const correct_ans=q.Answer.toLowerCase();
+    const skipped=!chosen;
+    const isOk=chosen===correct_ans;
+    let rowClass=skipped?'row-skip':isOk?'row-ok':'row-bad';
+    let pill=skipped?'<span class="pill pill-skip">Skipped</span>':isOk?'<span class="pill pill-ok">✓ Correct</span>':'<span class="pill pill-bad">✗ Wrong</span>';
+    tbody.innerHTML+=`<tr class="${rowClass}">
+      <td>${i+1}</td>
+      <td>${q.Problem_ID}</td>
+      <td>${TOPIC_LABELS[q.Topic]||q.Topic}</td>
+      <td class="ans-cell ${!skipped&&!isOk?'wro':''}">${skipped?'—':chosen.toUpperCase()}</td>
+      <td class="ans-cell cor">${correct_ans.toUpperCase()}</td>
+      <td>${pill}</td>
+    </tr>`;
+  });
+
+  document.getElementById('timer-nav').style.display='none';
+}
+
+function goSetup(){
+  showPage('pg-setup');
+  document.getElementById('timer-nav').style.display='none';
+}
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
